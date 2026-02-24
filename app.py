@@ -65,6 +65,14 @@ LANG_STRINGS = {
         "TR": f"Hata: {{num_missing}} alan eksik. İzin verilen en fazla eksik alan sayısı {IMPUTATION_THRESHOLD}."
     },
     "error_missing_fields": {"ENG": "Missing Fields:", "TR": "Eksik Alanlar:"},
+    "missing_and_more": {
+        "ENG": "...and {count} more field(s) are missing.",
+        "TR": "...ve {count} alan daha eksik."
+    },
+    "warning_all_required": {
+        "ENG": "Please complete all missing fields before running the analysis. This tool requires complete patient data to produce a reliable clinical result.",
+        "TR": "Analizi çalıştırmadan önce lütfen eksik alanların tamamını doldurun. Bu araç, güvenilir bir klinik sonuç üretebilmek için hastaya ait tüm verilerin eksiksiz girilmesini gerektirmektedir."
+    },
     "warn_imputed": {
         "ENG": f"**Warning:** {{num_missing}} feature(s) were missing and have been imputed using the population average (mean/mode). Results may be less accurate.",
         "TR": f"**Uyarı:** {{num_missing}} özellik eksikti ve popülasyon ortalaması (mean/mode) kullanılarak otomatik dolduruldu. Sonuçlar daha az güvenilir olabilir."
@@ -155,6 +163,14 @@ LANG_STRINGS = {
     "test_score": {
         "ENG": "Test Set F1-score",
         "TR": "Test Set F1-skoru"
+    },
+    "placeholder_number": {
+        "ENG": "Enter value...",
+        "TR": "Değer girin..."
+    },
+    "placeholder_select": {
+        "ENG": "Select an option...",
+        "TR": "Bir seçenek seçin..."
     }
 }
 
@@ -315,20 +331,21 @@ def plot_diagnostic_landscape(X_emb_train, y_train, lang, new_patient_coords=Non
     
     # ── proxy artists just for the legend ────────────────────────────
     legend_handles = [
-        Patch(facecolor="red", edgecolor="red", label=T("legend_g1")),
-        Patch(facecolor="blue", edgecolor="blue", label=T("legend_g2"))
+        Patch(facecolor="red",  edgecolor="red",  label=T("legend_g1")),
+        Patch(facecolor="blue", edgecolor="blue", label=T("legend_g2")),
+        Patch(facecolor="gray", edgecolor="gray", label="Uncertain"),
     ]
-    
+
     # Sadece 'new_patient_coords' varsa kırmızı yıldızı çiz
     if new_patient_coords is not None:
-        ax.scatter(new_patient_coords[0], new_patient_coords[1], 
+        ax.scatter(new_patient_coords[0], new_patient_coords[1],
                   c='red', s=200, marker='*', edgecolors='darkred', linewidths=2,
                   zorder=10, label=T("legend_new"))
         legend_handles.append(
             Patch(facecolor="red", edgecolor="darkred", label=T("legend_new"))
         )
-    
-    ax.legend(handles=legend_handles, loc='upper right', frameon=True)
+
+    ax.legend(handles=legend_handles, loc='upper right', frameon=False)
     
     plt.tight_layout()
     return fig
@@ -373,12 +390,12 @@ categorical_map = {
     "HIPERTIROIDI": yes_no_map, "REYNAULD": yes_no_map,
 }
 KEY_FEATURES = [
-    "AGE", "GENDER", "Chest Pain Character", "PEAK_TROP", 
+    "AGE", "GENDER", "Chest Pain Character", "PEAK_TROP",
     "Segmentary Wall Motion Abnormality", "MRI_LGE"
 ]
 SYMPTOM_FEATURES = [
     "Chest Pain", "Chest Pain Duration(saat)", "Radiation", "Arm Pain",
-    "Back Pain", "Epigastric Pain", "Relation with exercise", 
+    "Back Pain", "Epigastric Pain", "Relation with exercise",
     "Relation with Position", "Dyspnea", "Fatigue", "Nausea", "Çarpıntı",
     "Any Previous Pain Attacks"
 ]
@@ -408,20 +425,20 @@ def render_feature_widget(feature, data_dict):
             label=feature,
             options=options_list,
             index=None,
-            placeholder="Select an option..."
+            placeholder=T("placeholder_select")
         )
         data_dict[feature] = options_map[selected_option] if selected_option is not None else None
     else:
         min_val = 0.0
         max_val = None
         if feature == "AGE":
-            min_val = 0
-            max_val = 120
-        
+            min_val = 0.0
+            max_val = 120.0
+
         data_dict[feature] = st.number_input(
-            feature, 
-            value=None, 
-            placeholder="Enter value... (Numeric only)",
+            feature,
+            value=None,
+            placeholder=T("placeholder_number"),
             format="%.4f",
             min_value=min_val,
             max_value=max_val
@@ -514,8 +531,9 @@ if artifacts is not None:
                 st.error(T("error_missing_max").format(num_missing=num_missing))
                 st.subheader(T("error_missing_fields"))
                 for f in missing_features[:10]: st.write(f"- {f}")
-                if len(missing_features) > 10: st.write("...and more.")
-                st.info("⚠️ All fields are required. Please fill in all patient data to proceed.")
+                if len(missing_features) > 10:
+                    st.write(T("missing_and_more").format(count=len(missing_features) - 10))
+                st.warning(T("warning_all_required"))
 
             # Tüm feature'lar dolu -> HESAPLA
             else: 
