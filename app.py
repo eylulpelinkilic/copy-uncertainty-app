@@ -29,6 +29,7 @@ MODEL_PATH = "best_model_finetuned.pkl"
 METADATA_PATH = "model_metadata.pkl"
 TEST_METRICS_PATH = "final_test_metrics.json"
 EMBEDDING_PATH = os.path.join("app_artifacts", "embedding_data.npz")
+LANDSCAPE_PATH = os.path.join("app_artifacts", "diagnostic_landscape.png")
 
 # --- MODEL SABİTLERİ ---
 G1, G2 = 1, 2 # Sadece iki grubumuz var
@@ -612,15 +613,17 @@ if artifacts is not None:
         else:
             # --- Karşılama Ekranı "Bulut"u gösterir ---
             
-            # 1. ÖNCE "BULUT"U GÖSTER
+            # 1. ÖNCE "BULUT"U GÖSTER — pre-rendered PNG (notebook output)
             st.subheader(T("plot_title_tsne"))
-            fig_tsne_initial = plot_diagnostic_landscape(
-                embedding_data['X_emb'], 
-                embedding_data['y'],
-                lang
-                # new_patient_coords gönderilmiyor (None olacak)
-            )
-            st.pyplot(fig_tsne_initial)
+            if os.path.exists(LANDSCAPE_PATH):
+                st.image(LANDSCAPE_PATH, use_container_width=True)
+            else:
+                fig_tsne_initial = plot_diagnostic_landscape(
+                    embedding_data['X_emb'],
+                    embedding_data['y'],
+                    lang
+                )
+                st.pyplot(fig_tsne_initial)
             
             st.divider() # Grafik ve açıklama arasına çizgi
             
