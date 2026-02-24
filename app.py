@@ -189,7 +189,9 @@ def load_artifacts():
             model = pickle.load(f)
         with open(METADATA_PATH, "rb") as f:
             metadata = pickle.load(f)
-        embedding_data = np.load(EMBEDDING_PATH)
+        _raw = np.load(EMBEDDING_PATH)
+        embedding_data = {k: np.array(_raw[k]) for k in _raw.files}
+        _raw.close()
 
         test_metrics = {}
         if os.path.exists(TEST_METRICS_PATH):
@@ -320,15 +322,17 @@ def plot_diagnostic_landscape(X_emb_train, y_train, lang, new_patient_coords=Non
     over_img[..., 3] = alpha_overlap  # density-weighted fade-out
     
     # --- Plot, final clean look ----------------------------------------------
+    plt.close('all')
     fig, ax = plt.subplots()
-    
+    fig.patch.set_facecolor('white')
+
     # Filled RGBA layers
     for img in [over_img, red_img, blue_img]:
         ax.imshow(img, extent=(xmin, xmax, ymin, ymax), origin="lower", interpolation="bilinear")
-    
+
     # Hide the entire axes frame (ticks, spines, labels)
-    ax.set_axis_off()  # 'off' removes ticks, spines and axis labels
-    
+    ax.set_axis_off()
+
     # ── proxy artists just for the legend ────────────────────────────
     legend_handles = [
         Patch(facecolor="red",  edgecolor="red",  label=T("legend_g1")),
@@ -346,8 +350,8 @@ def plot_diagnostic_landscape(X_emb_train, y_train, lang, new_patient_coords=Non
         )
 
     ax.legend(handles=legend_handles, loc='upper right', frameon=False)
-    
-    plt.tight_layout()
+
+    fig.tight_layout()
     return fig
 
 def plot_uncertainty_vector(x_new_vec_df, lang):
