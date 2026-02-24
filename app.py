@@ -24,12 +24,13 @@ COLOR_BACKGROUND = "#FFFFFF"
 COLOR_TEXT = "#333333" 
 COLOR_NEW_PATIENT = "#E74C3C" 
 
-# Artifact Dosya Yolları
-MODEL_PATH = "best_model_finetuned.pkl"
-METADATA_PATH = "model_metadata.pkl"
-TEST_METRICS_PATH = "final_test_metrics.json"
-EMBEDDING_PATH = os.path.join("app_artifacts", "embedding_data.npz")
-LANDSCAPE_PATH = os.path.join("app_artifacts", "diagnostic_landscape.png")
+# Artifact Dosya Yolları (absolute, Streamlit Cloud uyumlu)
+_BASE = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(_BASE, "best_model_finetuned.pkl")
+METADATA_PATH = os.path.join(_BASE, "model_metadata.pkl")
+TEST_METRICS_PATH = os.path.join(_BASE, "final_test_metrics.json")
+EMBEDDING_PATH = os.path.join(_BASE, "app_artifacts", "embedding_data.npz")
+LANDSCAPE_PATH = os.path.join(_BASE, "app_artifacts", "diagnostic_landscape.png")
 
 # --- MODEL SABİTLERİ ---
 G1, G2 = 1, 2 # Sadece iki grubumuz var
@@ -616,8 +617,10 @@ if artifacts is not None:
             # 1. ÖNCE "BULUT"U GÖSTER — pre-rendered PNG (notebook output)
             st.subheader(T("plot_title_tsne"))
             if os.path.exists(LANDSCAPE_PATH):
-                st.image(LANDSCAPE_PATH, use_container_width=True)
+                with open(LANDSCAPE_PATH, "rb") as _f:
+                    st.image(_f.read(), use_container_width=True)
             else:
+                st.warning(f"Landscape PNG not found at: {LANDSCAPE_PATH}")
                 fig_tsne_initial = plot_diagnostic_landscape(
                     embedding_data['X_emb'],
                     embedding_data['y'],
