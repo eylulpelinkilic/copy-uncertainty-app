@@ -345,10 +345,10 @@ def plot_diagnostic_landscape(X_emb_train, y_train, lang, new_patient_coords=Non
     # Sadece 'new_patient_coords' varsa kırmızı yıldızı çiz
     if new_patient_coords is not None:
         ax.scatter(new_patient_coords[0], new_patient_coords[1],
-                  c='red', s=200, marker='*', edgecolors='darkred', linewidths=2,
+                  c='limegreen', s=200, marker='*', edgecolors='darkgreen', linewidths=2,
                   zorder=10, label=T("legend_new"))
         legend_handles.append(
-            Patch(facecolor="red", edgecolor="darkred", label=T("legend_new"))
+            Patch(facecolor="limegreen", edgecolor="darkgreen", label=T("legend_new"))
         )
 
     ax.legend(handles=legend_handles, loc='upper right', frameon=False)
