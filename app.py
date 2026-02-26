@@ -30,7 +30,6 @@ MODEL_PATH = os.path.join(_BASE, "best_model_finetuned.pkl")
 METADATA_PATH = os.path.join(_BASE, "model_metadata.pkl")
 TEST_METRICS_PATH = os.path.join(_BASE, "final_test_metrics.json")
 EMBEDDING_PATH = os.path.join(_BASE, "app_artifacts", "embedding_data.npz")
-LANDSCAPE_PATH = os.path.join(_BASE, "app_artifacts", "diagnostic_landscape.png")
 
 # --- MODEL SABİTLERİ ---
 G1, G2 = 1, 2 # Sadece iki grubumuz var
@@ -216,6 +215,17 @@ def find_tsne_position(x_new_std, X_std_train, X_emb_train, k=5):
     return new_position[0], new_position[1]
 
 # --- PLOT/GRAFİK FONKSİYONLARI (ÇEVİRİLİ) ---
+
+@st.cache_data
+def _plot_diagnostic_landscape_cached(X_emb_train_tuple, y_train_tuple, lang):
+    """Cache'li versiyon — sadece bulut (yeni hasta yok). Tuple alır çünkü cache hashable ister."""
+    return plot_diagnostic_landscape(
+        np.array(X_emb_train_tuple),
+        np.array(y_train_tuple),
+        lang,
+        new_patient_coords=None
+    )
+
 
 def plot_diagnostic_landscape(X_emb_train, y_train, lang, new_patient_coords=None):
     """
@@ -614,19 +624,14 @@ if artifacts is not None:
         else:
             # --- Karşılama Ekranı "Bulut"u gösterir ---
             
-            # 1. ÖNCE "BULUT"U GÖSTER — pre-rendered PNG (notebook output)
+            # 1. ÖNCE "BULUT"U GÖSTER — canlı matplotlib (cache'li)
             st.subheader(T("plot_title_tsne"))
-            if os.path.exists(LANDSCAPE_PATH):
-                with open(LANDSCAPE_PATH, "rb") as _f:
-                    st.image(_f.read(), use_container_width=True)
-            else:
-                st.warning(f"Landscape PNG not found at: {LANDSCAPE_PATH}")
-                fig_tsne_initial = plot_diagnostic_landscape(
-                    embedding_data['X_emb'],
-                    embedding_data['y'],
-                    lang
-                )
-                st.pyplot(fig_tsne_initial)
+            fig_tsne_initial = _plot_diagnostic_landscape_cached(
+                tuple(map(tuple, embedding_data['X_emb'])),
+                tuple(embedding_data['y'].tolist()),
+                lang
+            )
+            st.pyplot(fig_tsne_initial)
             
             st.divider() # Grafik ve açıklama arasına çizgi
             
