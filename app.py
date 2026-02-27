@@ -32,6 +32,7 @@ MODEL_PATH = os.path.join(_BASE, "best_model_finetuned.pkl")
 METADATA_PATH = os.path.join(_BASE, "model_metadata.pkl")
 TEST_METRICS_PATH = os.path.join(_BASE, "final_test_metrics.json")
 EMBEDDING_PATH = os.path.join(_BASE, "app_artifacts", "embedding_data.npz")
+LANDSCAPE_PATH = os.path.join(_BASE, "app_artifacts", "diagnostic_landscape.png")
 
 # --- MODEL SABİTLERİ ---
 G1, G2 = 1, 2 # Sadece iki grubumuz var
@@ -629,14 +630,17 @@ if artifacts is not None:
         else:
             # --- Karşılama Ekranı "Bulut"u gösterir ---
             
-            # 1. ÖNCE "BULUT"U GÖSTER — plotly (interaktif, cache'li)
+            # 1. ÖNCE "BULUT"U GÖSTER — notebook'tan kaydedilen PNG
             st.subheader(T("plot_title_tsne"))
-            fig_tsne_initial = plot_diagnostic_landscape(
-                embedding_data['X_emb'],
-                embedding_data['y'],
-                lang
-            )
-            st.plotly_chart(fig_tsne_initial, use_container_width=True)
+            if os.path.exists(LANDSCAPE_PATH):
+                with open(LANDSCAPE_PATH, "rb") as _f:
+                    st.image(_f.read(), use_container_width=True)
+            else:
+                st.warning("Landscape PNG bulunamadı. NEW_uncertainty.ipynb'deki Cell 27'yi çalıştırın.")
+                st.plotly_chart(
+                    plot_diagnostic_landscape(embedding_data['X_emb'], embedding_data['y'], lang),
+                    use_container_width=True
+                )
             
             st.divider() # Grafik ve açıklama arasına çizgi
             
