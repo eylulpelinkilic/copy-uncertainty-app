@@ -486,7 +486,7 @@ if artifacts is not None:
 
     # --- SÜTUN 1: Veri Girişi ---
     with col1:
-        st.header(T("header_input"))
+        st.subheader(T("header_input"))
         st.info(T("info_note"))
         
         with st.form("patient_form"):
@@ -535,7 +535,7 @@ if artifacts is not None:
             # Eksik feature varsa -> HATA (imputation yok)
             if num_missing > 0:
                 st.error(T("error_missing_max").format(num_missing=num_missing))
-                st.subheader(T("error_missing_fields"))
+                st.write(f"**{T('error_missing_fields')}**")
                 for f in missing_features[:10]: st.write(f"- {f}")
                 if len(missing_features) > 10:
                     st.write(T("missing_and_more").format(count=len(missing_features) - 10))
@@ -543,7 +543,7 @@ if artifacts is not None:
 
             # Tüm feature'lar dolu -> HESAPLA
             else: 
-                st.header(T("header_output"))
+                st.subheader(T("header_output"))
                 st.success(T("success_all_data"))
                 
                 # Transform patient data through the fitted pipeline
