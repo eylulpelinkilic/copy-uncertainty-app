@@ -15,7 +15,6 @@ from scipy.stats import gaussian_kde
 from sklearn.neighbors import NearestNeighbors
 from uncertainty_utils import EPS
 from uncertainty_transformer import UncertaintyTransformer  # required for unpickling
-from openTSNE import TSNE as OpenTSNE
 
 # Suppress scikit-learn version warnings for unpickling
 warnings.filterwarnings('ignore', category=UserWarning, module='sklearn')
@@ -319,23 +318,6 @@ def _compute_landscape_layers():
     over_img[..., 3] = alpha_overlap
 
     return red_img, blue_img, over_img, xmin, xmax, ymin, ymax
-
-
-@st.cache_resource(show_spinner="Fitting t-SNE model (first run only)...")
-def _get_tsne_fitted():
-    """
-    Fits openTSNE on the saved X_std from embedding_data.npz.
-    Identical hyperparameters to NEW_uncertainty.ipynb and NEW_case_study.ipynb.
-    Cached per app session — only runs once at startup.
-    """
-    _raw = np.load(EMBEDDING_PATH)
-    X_std = np.array(_raw["X_std"], dtype=float)
-    _raw.close()
-    tsne = OpenTSNE(
-        n_components=2, perplexity=50, early_exaggeration=12.0,
-        learning_rate="auto", initialization="pca", random_state=42,
-    )
-    return tsne.fit(X_std)
 
 
 @st.cache_data
@@ -696,11 +678,10 @@ if artifacts is not None:
                 # Fully scaled representation (uncertainty + scaler) — for t-SNE positioning
                 x_new_std = model.named_steps['scaler'].transform(x_new_unc)
 
-                # Project into landscape space with openTSNE .transform()
-                # (same approach as case study notebook — consistent with the saved embedding)
-                fitted_tsne = _get_tsne_fitted()
-                pt = fitted_tsne.transform(x_new_std)
-                new_coords_xy = (float(pt[0, 0]), float(pt[0, 1]))
+                # Project into landscape space via kNN interpolation
+                # (openTSNE .transform() degenerates for a single point at perplexity=50;
+                #  kNN gives stable, deterministic positioning for single-patient inference)
+                new_coords_xy = find_tsne_position(x_new_std, embedding_data['X_std'], embedding_data['X_emb'], k=5)
 
                 # Full pipeline prediction
                 y_pred = model.predict(X_new_df)
