@@ -35,6 +35,7 @@ TEST_METRICS_PATH = os.path.join(_BASE, "final_test_metrics.json")
 EMBEDDING_PATH = os.path.join(_BASE, "app_artifacts", "embedding_data.npz")
 LANDSCAPE_PATH = os.path.join(_BASE, "app_artifacts", "diagnostic_landscape.png")
 TSNE_MODEL_PATH = os.path.join(_BASE, "app_artifacts", "tsne_model.pkl")
+TSNE_SCALER_PATH = os.path.join(_BASE, "app_artifacts", "tsne_scaler.pkl")
 
 # --- MODEL SABİTLERİ ---
 G1, G2 = 1, 2 # Sadece iki grubumuz var
@@ -217,8 +218,14 @@ def load_artifacts():
             with open(TSNE_MODEL_PATH, "rb") as f:
                 tsne_model = pickle.load(f)
 
+        # tsne_scaler: the StandardScaler fitted on the sorted uncertainty matrix
+        # in NEW_uncertainty.ipynb — must be used for kNN positioning because
+        # embedding_data['X_std'] was produced by this exact scaler.
+        with open(TSNE_SCALER_PATH, "rb") as f:
+            tsne_scaler = pickle.load(f)
+
         feature_list = list(metadata["features"])
-        return model, metadata, embedding_data, test_metrics, feature_list, tsne_model
+        return model, metadata, embedding_data, test_metrics, feature_list, tsne_model, tsne_scaler
     except Exception as e:
         st.error(f"Error loading artifacts: {e}")
         st.error("Please ensure best_model_finetuned.pkl, model_metadata.pkl, and app_artifacts/embedding_data.npz exist.")
@@ -569,7 +576,7 @@ lang = st.session_state.language
 artifacts = load_artifacts()
 
 if artifacts is not None:
-    model, metadata, embedding_data, test_metrics, feature_list, tsne_model = artifacts
+    model, metadata, embedding_data, test_metrics, feature_list, tsne_model, tsne_scaler = artifacts
     
     # --- BASİT BAŞLIK VE DİL SEÇİMİ (APP BAR İPTAL EDİLDİ) ---
     st.title(T("main_title"))
@@ -675,12 +682,19 @@ if artifacts is not None:
                 x_new_unc = model.named_steps['uncertainty'].transform(X_new_df)
                 x_new_vec_raw = x_new_unc[0]
 
-                # Fully scaled representation (uncertainty + scaler) — for t-SNE positioning
-                x_new_std = model.named_steps['scaler'].transform(x_new_unc)
+                # Reorder uncertainty vector to sorted (alphabetical) feature order,
+                # then scale with tsne_scaler — the exact scaler used to produce
+                # embedding_data['X_std'] in NEW_uncertainty.ipynb.
+                # The model pipeline uses a different (non-alphabetical) feature order,
+                # so a direct model.named_steps['scaler'].transform() would compare
+                # against the wrong columns in X_std.
+                _unc_feats  = list(model.named_steps['uncertainty'].feature_names_in_)
+                _tsne_feats = list(tsne_scaler.feature_names_in_)
+                x_new_unc_df     = pd.DataFrame(x_new_unc, columns=_unc_feats)
+                x_new_unc_sorted = x_new_unc_df[_tsne_feats].values
+                x_new_std        = tsne_scaler.transform(x_new_unc_sorted)
 
                 # Project into landscape space via kNN interpolation
-                # (openTSNE .transform() degenerates for a single point at perplexity=50;
-                #  kNN gives stable, deterministic positioning for single-patient inference)
                 new_coords_xy = find_tsne_position(x_new_std, embedding_data['X_std'], embedding_data['X_emb'], k=5)
 
                 # Full pipeline prediction
