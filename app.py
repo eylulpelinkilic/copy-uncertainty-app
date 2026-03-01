@@ -4,14 +4,18 @@ import numpy as np
 import pickle
 import json
 import os
+import io
 import base64
 import warnings
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
+from matplotlib.lines import Line2D
+from scipy.stats import gaussian_kde
 from sklearn.neighbors import NearestNeighbors
 from uncertainty_utils import EPS
 from uncertainty_transformer import UncertaintyTransformer  # required for unpickling
+from openTSNE import TSNE as OpenTSNE
 
 # Suppress scikit-learn version warnings for unpickling
 warnings.filterwarnings('ignore', category=UserWarning, module='sklearn')
@@ -31,6 +35,7 @@ METADATA_PATH = os.path.join(_BASE, "model_metadata.pkl")
 TEST_METRICS_PATH = os.path.join(_BASE, "final_test_metrics.json")
 EMBEDDING_PATH = os.path.join(_BASE, "app_artifacts", "embedding_data.npz")
 LANDSCAPE_PATH = os.path.join(_BASE, "app_artifacts", "diagnostic_landscape.png")
+TSNE_MODEL_PATH = os.path.join(_BASE, "app_artifacts", "tsne_model.pkl")
 
 # --- MODEL SABİTLERİ ---
 G1, G2 = 1, 2 # Sadece iki grubumuz var
@@ -208,8 +213,13 @@ def load_artifacts():
             with open(TEST_METRICS_PATH) as f:
                 test_metrics = json.load(f)
 
+        tsne_model = None
+        if os.path.exists(TSNE_MODEL_PATH):
+            with open(TSNE_MODEL_PATH, "rb") as f:
+                tsne_model = pickle.load(f)
+
         feature_list = list(metadata["features"])
-        return model, metadata, embedding_data, test_metrics, feature_list
+        return model, metadata, embedding_data, test_metrics, feature_list, tsne_model
     except Exception as e:
         st.error(f"Error loading artifacts: {e}")
         st.error("Please ensure best_model_finetuned.pkl, model_metadata.pkl, and app_artifacts/embedding_data.npz exist.")
@@ -235,6 +245,136 @@ def find_tsne_position(x_new_std, X_std_train, X_emb_train, k=5):
     neighbor_coords_2d = X_emb_train[indices.flatten()]
     new_position = np.mean(neighbor_coords_2d, axis=0)
     return new_position[0], new_position[1]
+
+
+@st.cache_data(show_spinner="Computing diagnostic landscape...")
+def _compute_landscape_layers():
+    """
+    Computes KDE-based RGBA colour layers for the diagnostic landscape.
+    Identical algorithm to NEW_uncertainty.ipynb Cells 23-27.
+    Cached permanently — only runs once per Streamlit session.
+    """
+    _raw = np.load(EMBEDDING_PATH)
+    X_emb = np.array(_raw['X_emb'])
+    y     = np.array(_raw['y'])
+    _raw.close()
+
+    pad = 2.0
+    xmin = float(X_emb[:, 0].min()) - pad
+    xmax = float(X_emb[:, 0].max()) + pad
+    ymin = float(X_emb[:, 1].min()) - pad
+    ymax = float(X_emb[:, 1].max()) + pad
+
+    resolution = 600
+    xs = np.linspace(xmin, xmax, resolution)
+    ys = np.linspace(ymin, ymax, resolution)
+    xx, yy = np.meshgrid(xs, ys)
+    grid = np.vstack([xx.ravel(), yy.ravel()])
+
+    class1 = X_emb[y == 1]
+    class2 = X_emb[y == 2]
+
+    kde1 = gaussian_kde(class1.T, bw_method="scott")
+    kde2 = gaussian_kde(class2.T, bw_method="scott")
+    z1 = kde1(grid).reshape(xx.shape)
+    z2 = kde2(grid).reshape(xx.shape)
+
+    q = 0.6
+    level1 = np.quantile(z1, q)
+    level2 = np.quantile(z2, q)
+
+    def normalise(z, clip=0.98):
+        zmax = np.quantile(z, clip)
+        return np.clip(z / zmax, 0, 1)
+
+    alpha1 = normalise(z1) ** 0.5
+    alpha2 = normalise(z2) ** 0.5
+    alpha1[z1 < level1] = 0.0
+    alpha2[z2 < level2] = 0.0
+
+    overlap_mask  = (alpha1 > 0) & (alpha2 > 0)
+    alpha_overlap = np.maximum(alpha1, alpha2)
+    alpha_overlap[~overlap_mask] = 0.0
+    alpha1[overlap_mask] = 0.0
+    alpha2[overlap_mask] = 0.0
+
+    eps = 1e-12
+    total = z1 + z2 + eps
+    t = (z1 - z2) / total
+    shift_strength = 0.3
+
+    R = np.full_like(t, 0.5); G = np.full_like(t, 0.5); B = np.full_like(t, 0.5)
+    pos = t > 0
+    R[pos] += shift_strength * t[pos]; G[pos] -= shift_strength * t[pos]; B[pos] -= shift_strength * t[pos]
+    neg = t < 0
+    B[neg] += shift_strength * (-t[neg]); R[neg] -= shift_strength * (-t[neg]); G[neg] -= shift_strength * (-t[neg])
+
+    shape = (*alpha1.shape, 4)
+    red_img  = np.zeros(shape); red_img[..., 0]  = 1.0; red_img[..., 3]  = alpha1
+    blue_img = np.zeros(shape); blue_img[..., 2] = 1.0; blue_img[..., 3] = alpha2
+
+    shape2 = (*alpha_overlap.shape, 4)
+    over_img = np.zeros(shape2)
+    over_img[..., 0] = R; over_img[..., 1] = G; over_img[..., 2] = B
+    over_img[..., 3] = alpha_overlap
+
+    return red_img, blue_img, over_img, xmin, xmax, ymin, ymax
+
+
+@st.cache_resource(show_spinner="Fitting t-SNE model (first run only)...")
+def _get_tsne_fitted():
+    """
+    Fits openTSNE on the saved X_std from embedding_data.npz.
+    Identical hyperparameters to NEW_uncertainty.ipynb and NEW_case_study.ipynb.
+    Cached per app session — only runs once at startup.
+    """
+    _raw = np.load(EMBEDDING_PATH)
+    X_std = np.array(_raw["X_std"], dtype=float)
+    _raw.close()
+    tsne = OpenTSNE(
+        n_components=2, perplexity=50, early_exaggeration=12.0,
+        learning_rate="auto", initialization="pca", random_state=42,
+    )
+    return tsne.fit(X_std)
+
+
+@st.cache_data
+def render_landscape_with_patient(star_x, star_y, legend_g1, legend_g2, legend_new):
+    """
+    Renders the KDE diagnostic landscape + new-patient star in one matplotlib figure.
+    Identical coordinate system to the notebook (origin='lower', same extents).
+    Returns PNG bytes for st.image().
+    """
+    red_img, blue_img, over_img, xmin, xmax, ymin, ymax = _compute_landscape_layers()
+
+    fig, ax = plt.subplots(figsize=(7, 6.5))
+
+    for layer in [over_img, red_img, blue_img]:
+        ax.imshow(layer, extent=(xmin, xmax, ymin, ymax),
+                  origin="lower", interpolation="bilinear")
+
+    ax.scatter([star_x], [star_y], marker='*', s=500, c='limegreen',
+               edgecolors='darkgreen', linewidths=1.5, zorder=5)
+
+    legend_handles = [
+        Patch(color='red',       label=legend_g1),
+        Patch(color='blue',      label=legend_g2),
+        Patch(color='lightgray', label='Uncertain'),
+        Line2D([0], [0], marker='*', color='w',
+               markerfacecolor='limegreen', markeredgecolor='darkgreen',
+               markersize=14, label=legend_new),
+    ]
+    ax.legend(handles=legend_handles, loc='upper right', fontsize=9,
+              framealpha=0.85, edgecolor='#cccccc')
+
+    ax.set_axis_off()
+
+    buf = io.BytesIO()
+    fig.savefig(buf, format='png', dpi=120, bbox_inches='tight', facecolor='white')
+    plt.close(fig)
+    buf.seek(0)
+    return buf.read()
+
 
 # --- PLOT/GRAFİK FONKSİYONLARI (ÇEVİRİLİ) ---
 
@@ -447,7 +587,7 @@ lang = st.session_state.language
 artifacts = load_artifacts()
 
 if artifacts is not None:
-    model, metadata, embedding_data, test_metrics, feature_list = artifacts
+    model, metadata, embedding_data, test_metrics, feature_list, tsne_model = artifacts
     
     # --- BASİT BAŞLIK VE DİL SEÇİMİ (APP BAR İPTAL EDİLDİ) ---
     st.title(T("main_title"))
@@ -555,7 +695,12 @@ if artifacts is not None:
 
                 # Fully scaled representation (uncertainty + scaler) — for t-SNE positioning
                 x_new_std = model.named_steps['scaler'].transform(x_new_unc)
-                new_coords_xy = find_tsne_position(x_new_std, embedding_data['X_std'], embedding_data['X_emb'], k=5)
+
+                # Project into landscape space with openTSNE .transform()
+                # (same approach as case study notebook — consistent with the saved embedding)
+                fitted_tsne = _get_tsne_fitted()
+                pt = fitted_tsne.transform(x_new_std)
+                new_coords_xy = (float(pt[0, 0]), float(pt[0, 1]))
 
                 # Full pipeline prediction
                 y_pred = model.predict(X_new_df)
@@ -601,9 +746,11 @@ if artifacts is not None:
                         st.write(f"**{T('test_score')}:** {test_metrics['f1_macro']:.4f}")
 
                 st.subheader(T("plot_title_tsne"))
-                # 'new_patient_coords' parametresini gönderiyoruz
-                fig_tsne = plot_diagnostic_landscape(embedding_data['X_emb'], embedding_data['y'], lang, new_patient_coords=new_coords_xy)
-                st.plotly_chart(fig_tsne, use_container_width=True)
+                landscape_img = render_landscape_with_patient(
+                    new_coords_xy[0], new_coords_xy[1],
+                    T("legend_g1"), T("legend_g2"), T("legend_new")
+                )
+                st.image(landscape_img, use_container_width=True)
                 
                 st.subheader(T("plot_title_bar"))
                 x_new_vec_df = pd.DataFrame({"Feature": feature_list, "Uncertainty Score": x_new_vec_raw}).sort_values(by="Uncertainty Score", ascending=False).head(20)

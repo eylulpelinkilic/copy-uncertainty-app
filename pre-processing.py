@@ -7,13 +7,14 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.manifold import TSNE
 from scipy.stats import gaussian_kde
 from sklearn.exceptions import ConvergenceWarning
+from uncertainty_utils import EPS
 
 # --- Suppress Warnings ---
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
 # --- CONSTANTS ---
-EPS = 1e-6
+# EPS imported from uncertainty_utils (1e-12) for consistency
 # LAMBDA is no longer needed as D_in is gone
 BINS = 20
 SMOOTH = 1e-9

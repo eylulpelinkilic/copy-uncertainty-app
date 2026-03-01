@@ -2,7 +2,10 @@ streamlit
 pandas
 numpy
 scikit-learn==1.6.1
+scipy
 openpyxl
 plotly
 matplotlib
 seaborn
+optuna
+openTSNE
