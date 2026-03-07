@@ -143,38 +143,6 @@ LANG_STRINGS = {
         "ENG": "Application failed to load. Please check the terminal for errors.",
         "TR": "Uygulama yüklenemedi. Lütfen terminali kontrol edin."
     },
-    "prediction_title": {
-        "ENG": "Model Prediction",
-        "TR": "Model Tahmini"
-    },
-    "predicted_class": {
-        "ENG": "Predicted Class",
-        "TR": "Tahmin Edilen Sınıf"
-    },
-    "prediction_probability": {
-        "ENG": "Prediction Probability",
-        "TR": "Tahmin Olasılığı"
-    },
-    "class_1_name": {
-        "ENG": "Myocarditis",
-        "TR": "Miyokardit"
-    },
-    "class_2_name": {
-        "ENG": "ACS",
-        "TR": "AKS"
-    },
-    "model_info": {
-        "ENG": "Model Information",
-        "TR": "Model Bilgisi"
-    },
-    "cv_score": {
-        "ENG": "Cross-Validation F1-score",
-        "TR": "Çapraz Doğrulama F1-skoru"
-    },
-    "test_score": {
-        "ENG": "Test Set F1-score",
-        "TR": "Test Set F1-skoru"
-    },
     "placeholder_number": {
         "ENG": "Enter value...",
         "TR": "Değer girin..."
@@ -696,49 +664,6 @@ if artifacts is not None:
 
                 # Project into landscape space via kNN interpolation
                 new_coords_xy = find_tsne_position(x_new_std, embedding_data['X_std'], embedding_data['X_emb'], k=5)
-
-                # Full pipeline prediction
-                y_pred = model.predict(X_new_df)
-                y_prob = model.predict_proba(X_new_df)
-                predicted_class = int(y_pred[0])
-                clf_classes = list(model.named_steps['clf'].classes_)
-                prob_class_1 = float(y_prob[0][clf_classes.index(G1)])
-                prob_class_2 = float(y_prob[0][clf_classes.index(G2)])
-
-                st.subheader(T("prediction_title"))
-                col_pred1, col_pred2 = st.columns(2)
-
-                with col_pred1:
-                    st.metric(
-                        T("predicted_class"),
-                        T("class_1_name") if predicted_class == G1 else T("class_2_name")
-                    )
-
-                with col_pred2:
-                    prob_display = prob_class_1 if predicted_class == G1 else prob_class_2
-                    st.metric(
-                        T("prediction_probability"),
-                        f"{prob_display:.1%}"
-                    )
-
-                # Show probability breakdown
-                prob_df = pd.DataFrame({
-                    "Class": [T("class_1_name"), T("class_2_name")],
-                    "Probability": [f"{prob_class_1:.1%}", f"{prob_class_2:.1%}"]
-                })
-                st.dataframe(prob_df, use_container_width=True, hide_index=True)
-
-                # Model info
-                with st.expander(T("model_info"), expanded=False):
-                    st.write(f"**Model:** {metadata['model_name']}")
-                    cv = metadata.get('cv_results', {})
-                    if cv.get('recall_mean') is not None:
-                        st.write(f"**CV Recall (macro):** {cv['recall_mean']:.4f} ± {cv.get('recall_std', 0):.4f}")
-                        st.caption("Nested CV estimate (single-model selection procedure per fold).")
-                    if test_metrics.get('recall_macro') is not None:
-                        st.write(f"**Test Recall (macro):** {test_metrics['recall_macro']:.4f}")
-                    if test_metrics.get('f1_macro') is not None:
-                        st.write(f"**{T('test_score')}:** {test_metrics['f1_macro']:.4f}")
 
                 st.subheader(T("plot_title_tsne"))
                 landscape_img = render_landscape_with_patient(
