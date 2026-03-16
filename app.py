@@ -154,6 +154,18 @@ LANG_STRINGS = {
     "demo_selector_label": {
         "ENG": "Quick Demo Patient",
         "TR": "Hızlı Demo Hasta"
+    },
+    "risk_factors_note": {
+        "ENG": (
+            "**Key risk factors to consider:**  \n"
+            "🔶 **ACS:** Diabetes mellitus (DM), hypertension (HT), smoking, hyperlipidemia (HL)  \n"
+            "🔵 **Myocarditis:** Recent upper respiratory tract infection (URI)"
+        ),
+        "TR": (
+            "**Göz önünde bulundurulması gereken temel risk faktörleri:**  \n"
+            "🔶 **AKS:** Diyabet (DM), hipertansiyon (HT), sigara, hiperlipidemi (HL)  \n"
+            "🔵 **Miyokardit:** Yakın dönemde geçirilmiş üst solunum yolu enfeksiyonu (ÜSYE)"
+        )
     }
 }
 
@@ -548,6 +560,7 @@ if artifacts is not None:
     
     # --- BASİT BAŞLIK VE DİL SEÇİMİ (APP BAR İPTAL EDİLDİ) ---
     st.title(T("main_title"))
+    st.warning(T("risk_factors_note"))
 
     demo_patients = load_demo_patients()
     _NO_SEL = "───"
