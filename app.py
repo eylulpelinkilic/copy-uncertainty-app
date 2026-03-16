@@ -400,8 +400,16 @@ def render_landscape_filtered(star_x, star_y, filter_group, legend_label, legend
     img[..., 3] = alpha
 
     fig, ax = plt.subplots(figsize=(7, 6.5))
+
+    # White background spanning full extent — prevents bbox_inches='tight'
+    # from cropping transparent (zero-density) regions where the patient
+    # star might be located.
+    ax.imshow(np.ones((10, 10, 3), dtype=np.float32),
+              extent=(xmin, xmax, ymin, ymax),
+              origin="lower", aspect='auto', zorder=0)
+
     ax.imshow(img, extent=(xmin, xmax, ymin, ymax),
-              origin="lower", interpolation="bilinear")
+              origin="lower", interpolation="bilinear", zorder=1)
 
     if star_x is not None and star_y is not None:
         ax.scatter([star_x], [star_y], marker='*', s=500, c='limegreen',
@@ -416,6 +424,8 @@ def render_landscape_filtered(star_x, star_y, filter_group, legend_label, legend
         )
     ax.legend(handles=legend_handles, loc='upper right', fontsize=9,
               framealpha=0.85, edgecolor='#cccccc')
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
     ax.set_axis_off()
 
     buf = io.BytesIO()
