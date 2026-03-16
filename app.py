@@ -155,6 +155,10 @@ LANG_STRINGS = {
         "ENG": "Quick Demo Patient",
         "TR": "Hızlı Demo Hasta"
     },
+    "landscape_view_label": {"ENG": "Show", "TR": "Göster"},
+    "view_all": {"ENG": "All Patients", "TR": "Tüm Hastalar"},
+    "view_myo": {"ENG": "Myocarditis Only", "TR": "Sadece Miyokardit"},
+    "view_acs": {"ENG": "ACS Only", "TR": "Sadece AKS"},
     "risk_factors_note": {
         "ENG": (
             "**Major Risk Factors**  \n"
@@ -336,6 +340,82 @@ def render_landscape_with_patient(star_x, star_y, legend_g1, legend_g2, legend_n
     ax.legend(handles=legend_handles, loc='upper right', fontsize=9,
               framealpha=0.85, edgecolor='#cccccc')
 
+    ax.set_axis_off()
+
+    buf = io.BytesIO()
+    fig.savefig(buf, format='png', dpi=120, bbox_inches='tight', facecolor='white')
+    plt.close(fig)
+    buf.seek(0)
+    return buf.read()
+
+
+@st.cache_data
+def render_landscape_filtered(star_x, star_y, filter_group, legend_label, legend_new):
+    """
+    Renders the KDE landscape for a single group (filter_group=1 or 2).
+    Uses the same coordinate extents as the full landscape so the patient
+    star stays in the correct position.
+    star_x / star_y can be None when no patient has been calculated yet.
+    """
+    _raw = np.load(EMBEDDING_PATH)
+    X_emb = np.array(_raw['X_emb'])
+    y     = np.array(_raw['y'])
+    _raw.close()
+
+    # Keep full extents so patient position is consistent across views
+    pad = 2.0
+    xmin = float(X_emb[:, 0].min()) - pad
+    xmax = float(X_emb[:, 0].max()) + pad
+    ymin = float(X_emb[:, 1].min()) - pad
+    ymax = float(X_emb[:, 1].max()) + pad
+
+    X_g = X_emb[y == filter_group]
+
+    resolution = 600
+    xs = np.linspace(xmin, xmax, resolution)
+    ys = np.linspace(ymin, ymax, resolution)
+    xx, yy = np.meshgrid(xs, ys)
+    grid = np.vstack([xx.ravel(), yy.ravel()])
+
+    kde = gaussian_kde(X_g.T, bw_method="scott")
+    z   = kde(grid).reshape(xx.shape)
+
+    level = np.quantile(z, 0.6)
+
+    def normalise(z, clip=0.98):
+        zmax = np.quantile(z, clip)
+        return np.clip(z / zmax, 0, 1)
+
+    alpha = normalise(z) ** 0.5
+    alpha[z < level] = 0.0
+
+    shape = (*alpha.shape, 4)
+    img = np.zeros(shape)
+    if filter_group == 1:          # Miyokardit → kırmızı
+        img[..., 0] = 1.0
+        patch_color = 'red'
+    else:                          # AKS → mavi
+        img[..., 2] = 1.0
+        patch_color = 'blue'
+    img[..., 3] = alpha
+
+    fig, ax = plt.subplots(figsize=(7, 6.5))
+    ax.imshow(img, extent=(xmin, xmax, ymin, ymax),
+              origin="lower", interpolation="bilinear")
+
+    if star_x is not None and star_y is not None:
+        ax.scatter([star_x], [star_y], marker='*', s=500, c='limegreen',
+                   edgecolors='darkgreen', linewidths=1.5, zorder=5)
+
+    legend_handles = [Patch(color=patch_color, label=legend_label)]
+    if star_x is not None:
+        legend_handles.append(
+            Line2D([0], [0], marker='*', color='w',
+                   markerfacecolor='limegreen', markeredgecolor='darkgreen',
+                   markersize=14, label=legend_new)
+        )
+    ax.legend(handles=legend_handles, loc='upper right', fontsize=9,
+              framealpha=0.85, edgecolor='#cccccc')
     ax.set_axis_off()
 
     buf = io.BytesIO()
@@ -679,10 +759,28 @@ if artifacts is not None:
                 new_coords_xy = find_tsne_position(x_new_std, embedding_data['X_std'], embedding_data['X_emb'], k=5)
 
                 st.subheader(T("plot_title_tsne"))
-                landscape_img = render_landscape_with_patient(
-                    new_coords_xy[0], new_coords_xy[1],
-                    T("legend_g1"), T("legend_g2"), T("legend_new")
+                _view_options = [T("view_all"), T("view_myo"), T("view_acs")]
+                _view_sel = st.radio(
+                    T("landscape_view_label"),
+                    _view_options,
+                    horizontal=True,
+                    key="landscape_view_result"
                 )
+                if _view_sel == T("view_myo"):
+                    landscape_img = render_landscape_filtered(
+                        new_coords_xy[0], new_coords_xy[1], 1,
+                        T("legend_g1"), T("legend_new")
+                    )
+                elif _view_sel == T("view_acs"):
+                    landscape_img = render_landscape_filtered(
+                        new_coords_xy[0], new_coords_xy[1], 2,
+                        T("legend_g2"), T("legend_new")
+                    )
+                else:
+                    landscape_img = render_landscape_with_patient(
+                        new_coords_xy[0], new_coords_xy[1],
+                        T("legend_g1"), T("legend_g2"), T("legend_new")
+                    )
                 st.image(landscape_img, use_container_width=True)
                 
                 st.subheader(T("plot_title_bar"))
@@ -693,10 +791,21 @@ if artifacts is not None:
                 
         else:
             # --- Karşılama Ekranı "Bulut"u gösterir ---
-            
+
             # 1. ÖNCE "BULUT"U GÖSTER — notebook'tan kaydedilen PNG
             st.subheader(T("plot_title_tsne"))
-            if os.path.exists(LANDSCAPE_PATH):
+            _view_options_w = [T("view_all"), T("view_myo"), T("view_acs")]
+            _view_sel_w = st.radio(
+                T("landscape_view_label"),
+                _view_options_w,
+                horizontal=True,
+                key="landscape_view_welcome"
+            )
+            if _view_sel_w == T("view_myo"):
+                st.image(render_landscape_filtered(None, None, 1, T("legend_g1"), T("legend_new")), use_container_width=True)
+            elif _view_sel_w == T("view_acs"):
+                st.image(render_landscape_filtered(None, None, 2, T("legend_g2"), T("legend_new")), use_container_width=True)
+            elif os.path.exists(LANDSCAPE_PATH):
                 with open(LANDSCAPE_PATH, "rb") as _f:
                     st.image(_f.read(), use_container_width=True)
             else:
