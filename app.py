@@ -157,14 +157,14 @@ LANG_STRINGS = {
     },
     "risk_factors_note": {
         "ENG": (
-            "**Key risk factors to consider:**  \n"
-            "🔶 **ACS:** Diabetes mellitus (DM), hypertension (HT), smoking, hyperlipidemia (HL)  \n"
-            "🔵 **Myocarditis:** Recent upper respiratory tract infection (URI)"
+            "**Major Risk Factors**  \n"
+            "🔵 **ACS:** Diabetes mellitus (DM), hypertension (HT), smoking, hyperlipidemia (HL)  \n"
+            "🔴 **Myocarditis:** Recent upper respiratory tract infection (URI)"
         ),
         "TR": (
-            "**Göz önünde bulundurulması gereken temel risk faktörleri:**  \n"
-            "🔶 **AKS:** Diyabet (DM), hipertansiyon (HT), sigara, hiperlipidemi (HL)  \n"
-            "🔵 **Miyokardit:** Yakın dönemde geçirilmiş üst solunum yolu enfeksiyonu (ÜSYE)"
+            "**Major Risk Faktörleri**  \n"
+            "🔵 **AKS:** Diyabet (DM), hipertansiyon (HT), sigara, hiperlipidemi (HL)  \n"
+            "🔴 **Miyokardit:** Yakın dönemde geçirilmiş üst solunum yolu enfeksiyonu (ÜSYE)"
         )
     }
 }
