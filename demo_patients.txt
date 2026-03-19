@@ -16,7 +16,8 @@
         "WBCpik": 7.7, "NEUpik": 4.6, "LYMPpik": 2.89, "EOSpik": 0.51, "MONOpik": 0.46,
         "HB": 12.4, "HTC": 35, "PLT": 243, "KREATIN": 0.63,
         "AST": 22, "ALT": 13,
-        "TOTAL_KOLESTEROL": 147, "TG": 71, "LDL": 106, "HDL": 27
+        "TOTAL_KOLESTEROL": 147, "TG": 71, "LDL": 106, "HDL": 27,
+        "TROP_KATSAYISI": 12.714286, "hs-CRP_KATSAYISI": 5.0
       }
     },
     {
@@ -34,7 +35,8 @@
         "WBCpik": 11.3, "NEUpik": 8.9, "LYMPpik": 2.52, "EOSpik": 0.16, "MONOpik": 0.62,
         "HB": 14.5, "HTC": 43, "PLT": 204, "KREATIN": 0.74,
         "AST": 59, "ALT": 25,
-        "TOTAL_KOLESTEROL": 163, "TG": 143, "LDL": 113, "HDL": 21
+        "TOTAL_KOLESTEROL": 163, "TG": 143, "LDL": 113, "HDL": 21,
+        "TROP_KATSAYISI": 34.571429, "hs-CRP_KATSAYISI": 24.2
       }
     },
     {
@@ -52,7 +54,8 @@
         "WBCpik": 12.36, "NEUpik": 8.62, "LYMPpik": 3.01, "EOSpik": 0.18, "MONOpik": 1.23,
         "HB": 14, "HTC": 42, "PLT": 366, "KREATIN": 1.05,
         "AST": 44, "ALT": 29,
-        "TOTAL_KOLESTEROL": 120, "TG": 119, "LDL": 71, "HDL": 25
+        "TOTAL_KOLESTEROL": 120, "TG": 119, "LDL": 71, "HDL": 25,
+        "TROP_KATSAYISI": 40.5, "hs-CRP_KATSAYISI": 24.8
       }
     },
     {
@@ -70,7 +73,8 @@
         "WBCpik": 8.45, "NEUpik": 5.6, "LYMPpik": 2.2, "EOSpik": 0.18, "MONOpik": 0.78,
         "HB": 15, "HTC": 46, "PLT": 232, "KREATIN": 1.1,
         "AST": 16, "ALT": 12,
-        "TOTAL_KOLESTEROL": 117, "TG": 66, "LDL": 61, "HDL": 43
+        "TOTAL_KOLESTEROL": 117, "TG": 66, "LDL": 61, "HDL": 43,
+        "TROP_KATSAYISI": 4.714286, "hs-CRP_KATSAYISI": 0.2
       }
     },
     {
@@ -88,7 +92,8 @@
         "WBCpik": 8.8, "NEUpik": 5.49, "LYMPpik": 3.2, "EOSpik": 0.21, "MONOpik": 0.55,
         "HB": 13, "HTC": 41, "PLT": 345, "KREATIN": 0.84,
         "AST": 13, "ALT": 28,
-        "TOTAL_KOLESTEROL": 140, "TG": 128, "LDL": 77, "HDL": 37
+        "TOTAL_KOLESTEROL": 140, "TG": 128, "LDL": 77, "HDL": 37,
+        "TROP_KATSAYISI": 1.142857, "hs-CRP_KATSAYISI": 0.394
       }
     },
     {
@@ -106,7 +111,8 @@
         "WBCpik": 12.39, "NEUpik": 8.61, "LYMPpik": 2.57, "EOSpik": 0.16, "MONOpik": 1.68,
         "HB": 14.6, "HTC": 44, "PLT": 306, "KREATIN": 0.81,
         "AST": 22, "ALT": 24,
-        "TOTAL_KOLESTEROL": 187, "TG": 180, "LDL": 119, "HDL": 32
+        "TOTAL_KOLESTEROL": 187, "TG": 180, "LDL": 119, "HDL": 32,
+        "TROP_KATSAYISI": 1.214286, "hs-CRP_KATSAYISI": 20.2
       }
     },
     {
@@ -124,7 +130,8 @@
         "WBCpik": 17.6, "NEUpik": 14.1, "LYMPpik": 3.74, "EOSpik": 0.36, "MONOpik": 1.23,
         "HB": 15, "HTC": 44, "PLT": 311, "KREATIN": 0.8,
         "AST": 17, "ALT": 14,
-        "TOTAL_KOLESTEROL": 118, "TG": 109, "LDL": 57, "HDL": 39
+        "TOTAL_KOLESTEROL": 118, "TG": 109, "LDL": 57, "HDL": 39,
+        "TROP_KATSAYISI": 447.857143, "hs-CRP_KATSAYISI": 2.74
       }
     },
     {
@@ -142,7 +149,8 @@
         "WBCpik": 15.9, "NEUpik": 10.7, "LYMPpik": 3.2, "EOSpik": 0.07, "MONOpik": 1.22,
         "HB": 16, "HTC": 46, "PLT": 293, "KREATIN": 0.9,
         "AST": 35, "ALT": 31,
-        "TOTAL_KOLESTEROL": 224, "TG": 191, "LDL": 139, "HDL": 47
+        "TOTAL_KOLESTEROL": 224, "TG": 191, "LDL": 139, "HDL": 47,
+        "TROP_KATSAYISI": 13.571429, "hs-CRP_KATSAYISI": 22.2
       }
     },
     {
@@ -160,7 +168,8 @@
         "WBCpik": 7.9, "NEUpik": 4.9, "LYMPpik": 2.3, "EOSpik": 0.07, "MONOpik": 0.57,
         "HB": 12, "HTC": 39, "PLT": 272, "KREATIN": 0.5,
         "AST": 15, "ALT": 9,
-        "TOTAL_KOLESTEROL": 145, "TG": 73, "LDL": 71, "HDL": 59
+        "TOTAL_KOLESTEROL": 145, "TG": 73, "LDL": 71, "HDL": 59,
+        "TROP_KATSAYISI": 0.214286, "hs-CRP_KATSAYISI": 0.12
       }
     },
     {
@@ -178,7 +187,8 @@
         "WBCpik": 11.5, "NEUpik": 7.3, "LYMPpik": 3.3, "EOSpik": 0.3, "MONOpik": 0.66,
         "HB": 15, "HTC": 45, "PLT": 257, "KREATIN": 0.8,
         "AST": 31, "ALT": 20,
-        "TOTAL_KOLESTEROL": 210, "TG": 335, "LDL": 143, "HDL": 33
+        "TOTAL_KOLESTEROL": 210, "TG": 335, "LDL": 143, "HDL": 33,
+        "TROP_KATSAYISI": 3.142857, "hs-CRP_KATSAYISI": 0.252
       }
     }
   ]
