@@ -519,8 +519,11 @@ def plot_diagnostic_landscape(X_emb_train, y_train, lang, new_patient_coords=Non
 
 def plot_uncertainty_vector(x_new_vec_df, lang):
     """Çubuk grafiği çizer."""
+    labeled = x_new_vec_df['Feature'].apply(
+        lambda f: f"★ {f}" if f in MAJOR_RISK_FEATURES else f
+    )
     fig = go.Figure()
-    fig.add_trace(go.Bar(x=x_new_vec_df['Uncertainty Score'], y=x_new_vec_df['Feature'], orientation='h', marker=dict(color=COLOR_BLUE)))
+    fig.add_trace(go.Bar(x=x_new_vec_df['Uncertainty Score'], y=labeled, orientation='h', marker=dict(color=COLOR_BLUE)))
     
     fig.update_layout(
         title=T("bar_chart_title"), 
@@ -556,6 +559,11 @@ categorical_map = {
     "Alcohol": yes_no_map, "KOAH": yes_no_map, "PAH": yes_no_map,
     "HIPERTIROIDI": yes_no_map, "REYNAULD": yes_no_map,
 }
+MAJOR_RISK_FEATURES = {
+    "DM", "HT", "SIGARA", "HL",          # ACS major risk factors
+    "Recent Infection(4 hafta)",           # Myocarditis major risk factor
+}
+
 KEY_FEATURES = [
     "AGE", "SEX",
     "Segmentary Wall Motion Abnormality", "MRI_LGE"
@@ -838,10 +846,13 @@ if artifacts is not None:
             _global_df = pd.DataFrame({"Feature": _tsne_feats, "Uncertainty Score": _mean_raw})
             _global_df = _global_df[_global_df["Uncertainty Score"] > 0] \
                 .sort_values("Uncertainty Score", ascending=True).head(20)
+            _global_df['Label'] = _global_df['Feature'].apply(
+                lambda f: f"★ {f}" if f in MAJOR_RISK_FEATURES else f
+            )
             fig_global = go.Figure()
             fig_global.add_trace(go.Bar(
                 x=_global_df['Uncertainty Score'],
-                y=_global_df['Feature'],
+                y=_global_df['Label'],
                 orientation='h',
                 marker=dict(color=COLOR_BLUE)
             ))
